@@ -1,0 +1,73 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <ESP8266WiFi.h>
+#include <FirebaseArduino.h>
+
+const char* ssid = "tousifredmi";
+const char* password = "69696969";
+const String firebaseHost = "tousif-firebase-host";
+const String firebaseAuth = "tousif's-firebase-auth-token";
+
+const int relayLightPin = 2;  // Connect relay for lights to pin 2
+const int relayFanPin = 3;   // Connect relay for fans to pin 3
+const int relayMotorPin = 4; // Connect relay for motors to pin 4
+const int fanSpeedPin = 5;   // Connect fan speed control to pin 5
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  Serial.begin(115200);
+  lcd.begin(16, 2);
+
+  pinMode(relayLightPin, OUTPUT);
+  pinMode(relayFanPin, OUTPUT);
+  pinMode(relayMotorPin, OUTPUT);
+  pinMode(fanSpeedPin, OUTPUT);
+
+  connectToWiFi();
+
+  Firebase.begin(firebaseHost, firebaseAuth);
+}
+
+void loop() {
+  int lightStatus = Firebase.getInt("lightStatus");
+  int fanStatus = Firebase.getInt("fanStatus");
+  int motorStatus = Firebase.getInt("motorStatus");
+  int fanSpeed = Firebase.getInt("fanSpeed");
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Lights: ");
+  lcd.print(lightStatus == 1 ? "ON " : "OFF");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Fans: ");
+  lcd.print(fanStatus == 1 ? "ON " : "OFF");
+
+  lcd.setCursor(0, 2);
+  lcd.print("Motor: ");
+  lcd.print(motorStatus == 1 ? "ON " : "OFF");
+
+  lcd.setCursor(0, 3);
+  lcd.print("Fan Speed: ");
+  lcd.print(fanSpeed);
+
+  digitalWrite(relayLightPin, lightStatus);
+  digitalWrite(relayFanPin, fanStatus);
+  digitalWrite(relayMotorPin, motorStatus);
+  analogWrite(fanSpeedPin, fanSpeed);
+
+  delay(5000); // Adjust delay as needed
+}
+
+void connectToWiFi() {
+  Serial.println("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting...");
+  }
+
+  Serial.println("Connected to WiFi");
+}
